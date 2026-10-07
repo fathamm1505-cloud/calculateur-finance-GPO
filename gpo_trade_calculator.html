@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPO Trade Calculator - Values Officielles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+  <div class="max-w-7xl mx-auto space-y-6">
+    
+    <!-- HEADER -->
+    <header class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-red-500">
+          🏴‍☠️ GPO Trade Calculator
+        </h1>
+        <p class="text-gray-400 text-sm mt-1">Calculateur de valeur & Base de données basée à 100% sur tes prix</p>
+      </div>
+      <div class="flex items-center gap-3 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+        <span class="text-xs text-gray-400">Référence d'échelle:</span>
+        <span class="text-amber-400 font-bold text-sm">MC = 5,000 pts</span>
+      </div>
+    </header>
+
+    <!-- CALCULATEUR DE TRADE -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- TES OBJETS -->
+      <div class="bg-gray-900/80 border border-amber-500/30 rounded-xl p-5 shadow-lg flex flex-col">
+        <div class="flex justify-between items-center pb-3 border-b border-gray-800 mb-4">
+          <h2 class="text-lg font-bold text-amber-400 flex items-center gap-2">
+            🪴 Mon Offre (Your Trade)
+          </h2>
+          <span id="my-total" class="text-2xl font-black text-amber-400">0 pts</span>
+        </div>
+        
+        <div class="mb-4">
+          <select id="my-select" onchange="addItem('my')" class="w-full bg-gray-800 border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
+            <option value="">+ Ajouter un objet à ton offre...</option>
+          </select>
+        </div>
+
+        <div id="my-items-list" class="space-y-2 flex-grow min-h-[150px] max-h-[300px] overflow-y-auto pr-1">
+          <p class="text-gray-500 text-center text-sm py-8 italic">Aucun objet ajouté</p>
+        </div>
+      </div>
+
+      <!-- LEURS OBJETS -->
+      <div class="bg-gray-900/80 border border-cyan-500/30 rounded-xl p-5 shadow-lg flex flex-col">
+        <div class="flex justify-between items-center pb-3 border-b border-gray-800 mb-4">
+          <h2 class="text-lg font-bold text-cyan-400 flex items-center gap-2">
+            🛍️ Son Offre (Their Trade)
+          </h2>
+          <span id="their-total" class="text-2xl font-black text-cyan-400">0 pts</span>
+        </div>
+
+        <div class="mb-4">
+          <select id="their-select" onchange="addItem('their')" class="w-full bg-gray-800 border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-cyan-500 outline-none">
+            <option value="">+ Ajouter un objet à son offre...</option>
+          </select>
+        </div>
+
+        <div id="their-items-list" class="space-y-2 flex-grow min-h-[150px] max-h-[300px] overflow-y-auto pr-1">
+          <p class="text-gray-500 text-center text-sm py-8 italic">Aucun objet ajouté</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULTAT DU TRADE -->
+    <section id="result-banner" class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-xl text-center">
+      <p class="text-gray-400 text-sm">Sélectionne des objets pour évaluer l'échange</p>
+    </section>
+
+    <!-- DATABASE / RECHERCHE -->
+    <section class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-xl">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h2 class="text-xl font-bold text-gray-100">📖 Base de Données des Values</h2>
+          <p class="text-xs text-gray-400">Recherche parmi tes objets officiels</p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <input type="text" id="search-input" oninput="renderDatabase()" placeholder="🔍 Rechercher un objet..." class="bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+          <select id="category-filter" onchange="renderDatabase()" class="bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+            <option value="ALL">Toutes les catégories</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-gray-300">
+          <thead class="bg-gray-800/60 text-xs text-gray-400 uppercase border-b border-gray-700">
+            <tr>
+              <th class="p-3">Objet</th>
+              <th class="p-3">Catégorie</th>
+              <th class="p-3 text-right">Valeur</th>
+              <th class="p-3 text-center">Demande</th>
+            </tr>
+          </thead>
+          <tbody id="database-body" class="divide-y divide-gray-800">
+            <!-- Injecté en JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const itemsData = [
+      // FRUITS LÉGENDAIRES
+      { id: "ito", name: "Ito", category: "Fruits Légendaires", value: 100 },
+      { id: "paw", name: "Paw", category: "Fruits Légendaires", value: 100 },
+      { id: "kage", name: "Kage", category: "Fruits Légendaires", value: 100 },
+      { id: "gura", name: "Gura", category: "Fruits Légendaires", value: 100 },
+      { id: "goro", name: "Goro", category: "Fruits Légendaires", value: 150 },
+      { id: "yami", name: "Yami", category: "Fruits Légendaires", value: 100 },
+      { id: "zushi", name: "Zushi", category: "Fruits Légendaires", value: 100 },
+      { id: "hie", name: "Hie", category: "Fruits Légendaires", value: 200 },
+      { id: "suna", name: "Suna", category: "Fruits Légendaires", value: 200 },
+      { id: "yuki", name: "Yuki", category: "Fruits Légendaires", value: 100 },
+      { id: "mera", name: "Mera", category: "Fruits Légendaires", value: 200 },
+      { id: "magu", name: "Magu", category: "Fruits Légendaires", value: 250 },
+      { id: "goru", name: "Goru", category: "Fruits Légendaires", value: 100 },
+      { id: "smoke", name: "Smoke", category: "Fruits Légendaires", value: 100 },
+      { id: "pika", name: "Pika", category: "Fruits Légendaires", value: 1100, demand: "5/10" },
+      { id: "biscuit", name: "Biscuit", category: "Fruits Légendaires", value: 200 },
+
+      // FRUITS MYTHIQUES
+      { id: "buddah", name: "Buddah", category: "Fruits Mythiques", value: 500, note: "A peu près un LC" },
+      { id: "ope", name: "Ope", category: "Fruits Mythiques", value: 500, demand: "5/10" },
+      { id: "tori", name: "Tori", category: "Fruits Mythiques", value: 1600, demand: "7/10" },
+      { id: "ptero", name: "Ptero", category: "Fruits Mythiques", value: 1200, demand: "6/10" },
+      { id: "soul", name: "Soul", category: "Fruits Mythiques", value: 1600 },
+      { id: "venom", name: "Venom", category: "Fruits Mythiques", value: 2000, demand: "6/10" },
+      { id: "mochi", name: "Mochi", category: "Fruits Mythiques", value: 2600, demand: "6/10" },
+      { id: "dragon", name: "Dragon", category: "Fruits Mythiques", value: 14000 },
+      { id: "leopard", name: "Leopard", category: "Fruits Mythiques", value: 3500 },
+
+      // GAMEPASS / ITEMS PAYÉS / ASE
+      { id: "peli_1m", name: "1 Million Peli", category: "Gamepass / Payé / RESKIN ASE", value: 300 },
+      { id: "token", name: "Token (Unité)", category: "Gamepass / Payé / RESKIN ASE", value: 50 },
+      { id: "mc", name: "Mythical Chest (MC)", category: "Gamepass / Payé / RESKIN ASE", value: 5000, demand: "8/10", note: "Item clé d'échelle" },
+      { id: "lc", name: "Legendary Chest (LC)", category: "Gamepass / Payé / RESKIN ASE", value: 400 },
+      { id: "rc", name: "Rare Chest (RC)", category: "Gamepass / Payé / RESKIN ASE", value: 50 },
+      { id: "ase", name: "All Seeing Eye (ASE)", category: "Gamepass / Payé / RESKIN ASE", value: 35000 },
+      { id: "cq", name: "Cupid ASE (Cq)", category: "Gamepass / Payé / RESKIN ASE", value: 36000 },
+      { id: "case", name: "Chromatic ASE (CASE)", category: "Gamepass / Payé / RESKIN ASE", value: 210000 },
+      { id: "blo_ase", name: "Blo ASE", category: "Gamepass / Payé / RESKIN ASE", value: 51000 },
+      { id: "hase", name: "Holly ASE (HASE)", category: "Gamepass / Payé / RESKIN ASE", value: 37000 },
+      { id: "baal_ase", name: "All Seeing Baal", category: "Gamepass / Payé / RESKIN ASE", value: 43000 },
+      { id: "shamrock_ase", name: "Shamrock ASE", category: "Gamepass / Payé / RESKIN ASE", value: 105000 },
+      { id: "blossom_ase", name: "Blossom ASE", category: "Gamepass / Payé / RESKIN ASE", value: 50000 },
+      { id: "sp_reset", name: "SP Reset", category: "Gamepass / Payé / RESKIN ASE", value: 5 },
+      { id: "dark_root", name: "Dark Root", category: "Gamepass / Payé / RESKIN ASE", value: 10 },
+      { id: "spirit_colour", name: "Spirit Colour", category: "Gamepass / Payé / RESKIN ASE", value: 150 },
+      { id: "spare_fruit_bag", name: "Spare Fruit Bag", category: "Gamepass / Payé / RESKIN ASE", value: 100 },
+      { id: "thriller_ship", name: "Thriller Ship", category: "Gamepass / Payé / RESKIN ASE", value: 300 },
+      { id: "hoverboard", name: "Hoverboard", category: "Gamepass / Payé / RESKIN ASE", value: 300 },
+      { id: "coffin_boat", name: "Coffin Boat", category: "Gamepass / Payé / RESKIN ASE", value: 300 },
+      { id: "striker", name: "Striker", category: "Gamepass / Payé / RESKIN ASE", value: 300 },
+      { id: "golden_hammer", name: "Golden Hammer", category: "Gamepass / Payé / RESKIN ASE", value: 75 },
+      { id: "df_journal", name: "DF Journal", category: "Gamepass / Payé / RESKIN ASE", value: 150 },
+      { id: "karoo", name: "Karoo", category: "Gamepass / Payé / RESKIN ASE", value: 75 },
+
+      // ARMES
+      { id: "thunder_club", name: "Thunder Club Kaido", category: "Armes", value: 12500 },
+      { id: "soul_cleaver", name: "Soul Cleaver", category: "Armes", value: 14000 },
+      { id: "jitte", name: "Jitte", category: "Armes", value: 200 },
+      { id: "golden_hook", name: "Golden Hook", category: "Armes", value: 50 },
+      { id: "bisento", name: "Bisento", category: "Armes", value: 50 },
+      { id: "gravity_cane", name: "Gravity Cane", category: "Armes", value: 50 },
+      { id: "moria_scissor", name: "Moria Scissor", category: "Armes", value: 50 },
+      { id: "borj_gauntlet", name: "Borj Gauntlet", category: "Armes", value: 150 },
+      { id: "shusui", name: "Shusui", category: "Armes", value: 100 },
+      { id: "crab_cutlass", name: "Crab Cutlass", category: "Armes", value: 50 },
+      { id: "golden_pole", name: "Golden Pole", category: "Armes", value: 50 },
+      { id: "neptune_trident", name: "Neptune Trident", category: "Armes", value: 100 },
+      { id: "black_pitchfork", name: "Black Pitchfork", category: "Armes", value: 50 },
+      { id: "veras_whip", name: "Vera's Whip", category: "Armes", value: 50 },
+      { id: "raiui", name: "Raiui", category: "Armes", value: 50 },
+      { id: "soul_cane", name: "Soul Cane", category: "Armes", value: 200 },
+      { id: "pipe", name: "Pipe", category: "Armes", value: 150 },
+      { id: "flower_sword", name: "Flower Sword", category: "Armes", value: 4500 },
+      { id: "ace", name: "Ace", category: "Armes", value: 700 },
+      { id: "yoru", name: "Yoru / Darkblade", category: "Armes", value: 6000 },
+      { id: "kikoku", name: "Kikoku", category: "Armes", value: 3000 },
+      { id: "mochi_trident", name: "Mochi Trident", category: "Armes", value: 300 },
+      { id: "helix_skewer", name: "Helix Skewer", category: "Armes", value: 100 },
+
+      // SOUL KING
+      { id: "violin", name: "Violin", category: "Soul King", value: 100 },
+      { id: "sk_guitar", name: "Soul King Guitar", category: "Soul King", value: 1500 },
+      { id: "sk_fit", name: "SK Fit", category: "Soul King", value: 75 },
+      { id: "sk_hat", name: "SK Hat", category: "Soul King", value: 150 },
+      { id: "sk_shades", name: "SK Shades", category: "Soul King", value: 100 },
+      { id: "sk_scarf", name: "Soul King Scarf", category: "Soul King", value: 36000 },
+
+      // ACCESSOIRES
+      { id: "musashi_karuta", name: "Musashi Karuta", category: "Accessoires", value: 25 },
+      { id: "musashi_hat", name: "Musashi Hat", category: "Accessoires", value: 25 },
+      { id: "law_cape", name: "Law Cape", category: "Accessoires", value: 25 },
+      { id: "law_fit", name: "Law Fit", category: "Accessoires", value: 50 },
+      { id: "law_hat", name: "Law Hat", category: "Accessoires", value: 25 },
+      { id: "domingo_cape", name: "Domingo Cape", category: "Accessoires", value: 90 },
+      { id: "domingo_outfit", name: "Domingo Outfit", category: "Accessoires", value: 75 },
+      { id: "domingo_shades", name: "Domingo Shades", category: "Accessoires", value: 150 },
+      { id: "moria_hat", name: "Moria Hat", category: "Accessoires", value: 25 },
+      { id: "moria_fit", name: "Moria Fit", category: "Accessoires", value: 25 },
+      { id: "moria_necklace", name: "Moria Necklace", category: "Accessoires", value: 100 },
+      { id: "batswarm", name: "Batswarm", category: "Accessoires", value: 600 },
+      { id: "ryuma_scarf", name: "Ryuma Scarf", category: "Accessoires", value: 300 },
+      { id: "tomoe_drums", name: "Tomoe Drums", category: "Accessoires", value: 100 },
+      { id: "big_mama_set", name: "Big Mama Fit/Cape/Hat", category: "Accessoires", value: 100 },
+      { id: "mochi_emperor_set", name: "Mochi Emperor Fit/Scarf", category: "Accessoires", value: 100 },
+      { id: "radiant_shades", name: "Radiant Admiral Shades", category: "Accessoires", value: 300 },
+      { id: "radiant_outfit", name: "Radiant Admiral Outfit", category: "Accessoires", value: 150 },
+      { id: "radiant_cape", name: "Radiant Admiral Cape", category: "Accessoires", value: 200 },
+      { id: "roger_hat", name: "Roger Hat", category: "Accessoires", value: 150 },
+      { id: "roger_fit", name: "Roger Fit", category: "Accessoires", value: 700 },
+      { id: "hawk_hat", name: "Hawk Hat", category: "Accessoires", value: 100 },
+      { id: "hawk_fit", name: "Hawk Fit", category: "Accessoires", value: 300 },
+      { id: "kaido_fit", name: "Kaido Fit", category: "Accessoires", value: 400 },
+      { id: "kaido_gourd", name: "Kaido Gourd", category: "Accessoires", value: 1000 },
+      { id: "kaido_cape", name: "Kaido Cape", category: "Accessoires", value: 800 },
+
+      // KRAKEN / SEA BEAST / FISHING
+      { id: "sb_core", name: "Sea Beast Core", category: "Kraken / Sea Beast / Fishing", value: 200 },
+      { id: "kk_core", name: "KK Core", category: "Kraken / Sea Beast / Fishing", value: 100 },
+      { id: "kk_armour_azure", name: "KK Armour Azure", category: "Kraken / Sea Beast / Fishing", value: 600 },
+      { id: "kk_gs_azure", name: "KK GS Azure", category: "Kraken / Sea Beast / Fishing", value: 600 },
+      { id: "sb_mask", name: "SB Mask", category: "Kraken / Sea Beast / Fishing", value: 50 },
+      { id: "sb_armor", name: "SB Armor", category: "Kraken / Sea Beast / Fishing", value: 50 },
+      { id: "megalodon_armor", name: "Megalodon Armor", category: "Kraken / Sea Beast / Fishing", value: 150 },
+      { id: "megalodon_helmet", name: "Megalodon Helmet", category: "Kraken / Sea Beast / Fishing", value: 400 },
+      { id: "df_rod", name: "Fruit Fishing Rod", category: "Kraken / Sea Beast / Fishing", value: 11000 },
+      { id: "sunken_helmet", name: "Sunken Helmet", category: "Kraken / Sea Beast / Fishing", value: 500 },
+      { id: "sunken_armor", name: "Sunken Armor", category: "Kraken / Sea Beast / Fishing", value: 150 },
+      { id: "dark_skeletal_shark_mask", name: "Dark Skeletal Shark Mask", category: "Kraken / Sea Beast / Fishing", value: 500 },
+      { id: "sunken_anchor", name: "Sunken Anchor", category: "Kraken / Sea Beast / Fishing", value: 400 },
+      { id: "boneshiver", name: "Boneshiver", category: "Kraken / Sea Beast / Fishing", value: 400 },
+      { id: "swordfish_rapier", name: "Swordfish Rapier", category: "Kraken / Sea Beast / Fishing", value: 500 },
+      { id: "max_leg_fishbait", name: "Max Leg Fishbait", category: "Kraken / Sea Beast / Fishing", value: 2000 },
+
+      // HALLOWEEN
+      { id: "baal_head", name: "Baal Head", category: "Halloween", value: 2000 },
+      { id: "baal_cape", name: "Baal Cape", category: "Halloween", value: 90 },
+      { id: "hollow_fang", name: "Hollow Fang", category: "Halloween", value: 1000 },
+      { id: "jester_box", name: "Jester Box", category: "Halloween", value: 600 },
+      { id: "jester_hat", name: "Jester Hat", category: "Halloween", value: 500 },
+      { id: "jester_scythe", name: "Jester Scythe", category: "Halloween", value: 100 },
+      { id: "jester_fit", name: "Jester Fit", category: "Halloween", value: 85000 },
+      { id: "hollow_gs", name: "Hollow GS", category: "Halloween", value: 250 },
+      { id: "hollow_halberd", name: "Hollow Halberd", category: "Halloween", value: 150 },
+      { id: "res_baal_head", name: "Resurrected Baal Head", category: "Halloween", value: 5000 },
+      { id: "res_baal_fit", name: "Resurrected Baal Fit", category: "Halloween", value: 300 },
+      { id: "true_baal_guard", name: "True Baal Guard", category: "Halloween", value: 1000 },
+      { id: "half_shroud", name: "Half Shroud", category: "Halloween", value: 500 },
+      { id: "hollow_world_ender", name: "Hollow World Ender", category: "Halloween", value: 9000 },
+      { id: "blood_scythe", name: "Blood Scythe", category: "Halloween", value: 200 },
+      { id: "nightfall_shroud", name: "Nightfall Shroud", category: "Halloween", value: 9000 },
+      { id: "endbringer_armor", name: "Endbringer Armor", category: "Halloween", value: 500 },
+      { id: "endbringer_wings", name: "Endbringer Wings", category: "Halloween", value: 1800 },
+      { id: "nightfall_aura", name: "Nightfall Aura", category: "Halloween", value: 14000 },
+      { id: "brand_of_sacrifice", name: "Brand of Sacrifice (BOS)", category: "Halloween", value: 15000 },
+      { id: "tung_club", name: "Tung Club", category: "Halloween", value: 13000 },
+
+      // VALENTINE
+      { id: "flower", name: "Flower", category: "Valentine", value: 21000 },
+      { id: "flamingo_boat", name: "Flamingo Boat", category: "Valentine", value: 2500 },
+      { id: "leo_inferno_hagoromo", name: "Leo Inferno Hagoromo", category: "Valentine", value: 125000 },
+      { id: "cupid_chakram", name: "Cupid Chakram", category: "Valentine", value: 200 },
+      { id: "virtuous_wings", name: "Virtuous Wings", category: "Valentine", value: 5000 },
+      { id: "q_wings", name: "Q Wings", category: "Valentine", value: 1700 },
+      { id: "q_fit", name: "Q Fit", category: "Valentine", value: 2500 },
+      { id: "cupid_wand", name: "Cupid Wand", category: "Valentine", value: 600 },
+      { id: "cupid_battleaxe", name: "Cupid Battleaxe", category: "Valentine", value: 100 },
+      { id: "inferno_rocket_blade", name: "Inferno Rocket Blade", category: "Valentine", value: 1500 },
+      { id: "firework_lancer", name: "Firework Lancer", category: "Valentine", value: 1500 },
+      { id: "cupid_headband", name: "Cupid Headband", category: "Valentine", value: 150 },
+      { id: "cupid_boat", name: "Cupid Boat", category: "Valentine", value: 50 },
+      { id: "cupid_bow", name: "Cupid Bow", category: "Valentine", value: 100 },
+      { id: "blessed_cupid_bow", name: "Blessed Cupid Bow", category: "Valentine", value: 10000 },
+      { id: "exalted_cq_outfit", name: "Exalted Cupid Queen Outfit", category: "Valentine", value: 300 },
+      { id: "blessed_ecq_fit", name: "Blessed ECQ Fit", category: "Valentine", value: 5000 },
+      { id: "cupid_vanguard_fit", name: "Cupid Vanguard Fit", category: "Valentine", value: 100 },
+      { id: "blessed_cupid_vanguard_fit", name: "Blessed Cupid Vanguard Fit", category: "Valentine", value: 400 },
+      { id: "cq_scarf", name: "Cupid Queen Scarf", category: "Valentine", value: 300 },
+      { id: "blessed_scarf", name: "Blessed Scarf", category: "Valentine", value: 14000 },
+      { id: "exalted_cq_wings", name: "Exalted Cupid Queen Wings", category: "Valentine", value: 3000 },
+      { id: "blessed_exalted_q_wings", name: "Blessed Exalted Q Wings", category: "Valentine", value: 58000 },
+
+      // PÂQUES
+      { id: "elo_hammer", name: "Elo Hammer", category: "Pâques", value: 1400 },
+      { id: "blo_crimson_sledgehammer", name: "Blo Crimson Sledgehammer", category: "Pâques", value: 1500 },
+      { id: "hopiyo", name: "HOPIYO", category: "Pâques", value: 8000 },
+      { id: "kumakawa_head", name: "Kumakawa Head", category: "Pâques", value: 1400 },
+      { id: "usamii_head", name: "Usamii Head", category: "Pâques", value: 800 },
+      { id: "bunyo", name: "Bunyo", category: "Pâques", value: 24000 },
+      { id: "yukio", name: "Yukio", category: "Pâques", value: 30000 },
+      { id: "firework_rocket_launcher", name: "Firework Rocket Launcher", category: "Pâques", value: 300 },
+      { id: "firework_daggers", name: "Firework Daggers", category: "Pâques", value: 400 },
+      { id: "gift_crown", name: "Gift Crown", category: "Pâques", value: 4000 },
+      { id: "gift_armor", name: "Gift Armor", category: "Pâques", value: 100 },
+      { id: "gift_helmet", name: "Gift Helmet", category: "Pâques", value: 100 },
+      { id: "rocky_pet", name: "Rocky Pet", category: "Pâques", value: 150 },
+      { id: "mega_pow", name: "Mega Pow", category: "Pâques", value: 20000 },
+
+      // CHRISTMAS
+      { id: "candy_cane", name: "Candy Cane (PCC/CC)", category: "Christmas", value: 170000 },
+      { id: "santa_hat_og", name: "Santa Hat (OG)", category: "Christmas", value: 7500 },
+      { id: "iceborn_rapier", name: "Iceborn Rapier", category: "Christmas", value: 100 },
+      { id: "snowcap_scepter", name: "Snowcap Scepter", category: "Christmas", value: 15000 },
+      { id: "iceborn_blade", name: "Iceborn Blade", category: "Christmas", value: 100 },
+      { id: "iceborn_dagger", name: "Iceborn Dagger", category: "Christmas", value: 100 },
+      { id: "iceborn_katana", name: "Iceborn Katana", category: "Christmas", value: 100 },
+      { id: "festival_lancer", name: "Festival Lancer", category: "Christmas", value: 800 },
+      { id: "festival_shield", name: "Festival Shield", category: "Christmas", value: 1000 },
+
+      // MISC
+      { id: "stark_guns", name: "Stark Guns", category: "Misc", value: 5000 },
+      { id: "coyote_fit", name: "Coyote Fit", category: "Misc", value: 10000 },
+      { id: "world_ender", name: "World Ender", category: "Misc", value: 22000 },
+      { id: "isoh", name: "ISOH", category: "Misc", value: 11000 },
+      { id: "toji_fit", name: "Toji Fit", category: "Misc", value: 700 },
+      { id: "black_bull_fit", name: "Black Bull Fit", category: "Misc", value: 600 },
+      { id: "golden_haori", name: "Golden Haori", category: "Misc", value: 700 },
+      { id: "ten_tails_fit", name: "Ten Tails Fit", category: "Misc", value: 800 },
+      { id: "snoozy_neko", name: "Snoozy Neko", category: "Misc", value: 1000 },
+      { id: "timerift_capsule", name: "Timerift Capsule", category: "Misc", value: 6500 },
+      { id: "sos", name: "SOS", category: "Misc", value: 6000 },
+      { id: "hoverpod", name: "Hoverpod", category: "Misc", value: 2200 },
+      { id: "troll_face", name: "Troll Face", category: "Misc", value: 26000 },
+      { id: "banana", name: "Banana", category: "Misc", value: 6000 },
+      { id: "clown_headwear", name: "Clown Headwear", category: "Misc", value: 6000 },
+      { id: "blue_valk", name: "Blue Valk", category: "Misc", value: 25000 },
+      { id: "dark_valk", name: "Dark Valk", category: "Misc", value: 60000 },
+      { id: "ice_valk", name: "Ice Valk", category: "Misc", value: 45000 },
+      { id: "violet_valk", name: "Violet Valk", category: "Misc", value: 55000 },
+      { id: "sparkle_time_valk", name: "Sparkle Time Valk", category: "Misc", value: 200000 },
+      { id: "emerald_valk", name: "Emerald Valk", category: "Misc", value: 150000 },
+      { id: "dominus_ultimus", name: "Dominus Ultimus", category: "Misc", value: 100000 },
+      { id: "dominus_emp", name: "Dominus Emp", category: "Misc", value: 250000 },
+
+      // RUMBLING
+      { id: "odm_rod", name: "ODM Rod", category: "Rumbling", value: 1800 },
+      { id: "titan_aura", name: "Titan Aura", category: "Rumbling", value: 60000 },
+
+      // PRESTIGE
+      { id: "prestige_maid_fit", name: "Prestige Maid Fit", category: "Prestige", value: 1100000 },
+      { id: "anomalized_mega_pow", name: "Anomalized Mega Pow", category: "Prestige", value: 300000 },
+      { id: "prestige_world_ender", name: "Prestige World Ender", category: "Prestige", value: 850000 },
+      { id: "prestige_bag", name: "Prestige Bag (pbag)", category: "Prestige", value: 240000 },
+      { id: "pfrl", name: "PFRL", category: "Prestige", value: 92000 },
+      { id: "pfd", name: "PFD", category: "Prestige", value: 175000 },
+      { id: "pirb", name: "PIRB", category: "Prestige", value: 420000 },
+      { id: "pfl", name: "PFL", category: "Prestige", value: 520000 },
+      { id: "pcc", name: "PCC", category: "Prestige", value: 1150000 },
+      { id: "icc", name: "ICC", category: "Prestige", value: 365000 },
+      { id: "prestige_chakram", name: "Prestige Chakram", category: "Prestige", value: 3500000 }
+    ];
+
+    let myTrade = [];
+    let theirTrade = [];
+
+    function init() {
+      // Trier alphabétiquement par nom
+      itemsData.sort((a, b) => a.name.localeCompare(b.name));
+
+      populateSelects();
+      populateCategoryFilter();
+      renderDatabase();
+    }
+
+    function populateSelects() {
+      const mySelect = document.getElementById('my-select');
+      const theirSelect = document.getElementById('their-select');
+
+      itemsData.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = `${item.name} (${item.value.toLocaleString()} pts)`;
+        mySelect.appendChild(opt.cloneNode(true));
+        theirSelect.appendChild(opt);
+      });
+    }
+
+    function populateCategoryFilter() {
+      const filter = document.getElementById('category-filter');
+      const categories = [...new Set(itemsData.map(i => i.category))];
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        filter.appendChild(opt);
+      });
+    }
+
+    function addItem(side) {
+      const select = document.getElementById(`${side}-select`);
+      const itemId = select.value;
+      if (!itemId) return;
+
+      const item = itemsData.find(i => i.id === itemId);
+      if (!item) return;
+
+      if (side === 'my') {
+        myTrade.push(item);
+      } else {
+        theirTrade.push(item);
+      }
+
+      select.value = '';
+      updateCalculator();
+    }
+
+    function removeItem(side, index) {
+      if (side === 'my') {
+        myTrade.splice(index, 1);
+      } else {
+        theirTrade.splice(index, 1);
+      }
+      updateCalculator();
+    }
+
+    function updateCalculator() {
+      const myTotal = myTrade.reduce((sum, item) => sum + item.value, 0);
+      const theirTotal = theirTrade.reduce((sum, item) => sum + item.value, 0);
+
+      document.getElementById('my-total').textContent = `${myTotal.toLocaleString()} pts`;
+      document.getElementById('their-total').textContent = `${theirTotal.toLocaleString()} pts`;
+
+      renderTradeList('my', myTrade);
+      renderTradeList('their', theirTrade);
+
+      renderResult(myTotal, theirTotal);
+    }
+
+    function renderTradeList(side, list) {
+      const container = document.getElementById(`${side}-items-list`);
+      if (list.length === 0) {
+        container.innerHTML = `<p class="text-gray-500 text-center text-sm py-8 italic">Aucun objet ajouté</p>`;
+        return;
+      }
+
+      container.innerHTML = list.map((item, index) => `
+        <div class="flex items-center justify-between bg-gray-800 p-2.5 rounded-lg border border-gray-700">
+          <div>
+            <span class="text-sm font-semibold text-gray-200">${item.name}</span>
+            <span class="text-xs text-gray-400 block">${item.value.toLocaleString()} pts</span>
+          </div>
+          <button onclick="removeItem('${side}', ${index})" class="text-red-400 hover:text-red-300 font-bold px-2 py-1 text-sm bg-red-900/20 hover:bg-red-900/40 rounded">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function renderResult(myTotal, theirTotal) {
+      const banner = document.getElementById('result-banner');
+
+      if (myTrade.length === 0 && theirTrade.length === 0) {
+        banner.className = "bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-xl text-center";
+        banner.innerHTML = `<p class="text-gray-400 text-sm">Sélectionne des objets pour évaluer l'échange</p>`;
+        return;
+      }
+
+      const diff = theirTotal - myTotal;
+      const percentage = myTotal > 0 ? ((diff / myTotal) * 100).toFixed(1) : 0;
+
+      if (diff > 0) {
+        banner.className = "bg-green-950/40 border border-green-500/40 rounded-xl p-6 shadow-xl text-center";
+        banner.innerHTML = `
+          <h3 class="text-2xl font-extrabold text-green-400 mb-1">✅ VICTOIRE ! (Win Trade)</h3>
+          <p class="text-gray-300 font-medium">Tu gagnes <span class="text-green-400 font-bold">+${diff.toLocaleString()} pts</span> (+${percentage}%)</p>
+        `;
+      } else if (diff < 0) {
+        banner.className = "bg-red-950/40 border border-red-500/40 rounded-xl p-6 shadow-xl text-center";
+        banner.innerHTML = `
+          <h3 class="text-2xl font-extrabold text-red-400 mb-1">🔻 PERTE ! (Lose Trade)</h3>
+          <p class="text-gray-300 font-medium">Tu perds <span class="text-red-400 font-bold">${Math.abs(diff).toLocaleString()} pts</span> (${percentage}%)</p>
+        `;
+      } else {
+        banner.className = "bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-xl text-center";
+        banner.innerHTML = `
+          <h3 class="text-2xl font-extrabold text-gray-200 mb-1">⚖️ ÉQUITABLE (Fair Trade)</h3>
+          <p class="text-gray-400">L'échange est d'une valeur identique exacte</p>
+        `;
+      }
+    }
+
+    function renderDatabase() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const cat = document.getElementById('category-filter').value;
+      const tbody = document.getElementById('database-body');
+
+      const filtered = itemsData.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(search);
+        const matchesCat = (cat === 'ALL' || item.category === cat);
+        return matchesSearch && matchesCat;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Aucun objet trouvé</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(item => `
+        <tr class="hover:bg-gray-800/40 transition">
+          <td class="p-3 font-semibold text-gray-200">
+            ${item.name}
+            ${item.note ? `<span class="block text-xs font-normal text-amber-400/80">${item.note}</span>` : ''}
+          </td>
+          <td class="p-3 text-xs text-gray-400">${item.category}</td>
+          <td class="p-3 text-right font-mono font-bold text-amber-400">${item.value.toLocaleString()}</td>
+          <td class="p-3 text-center text-xs">${item.demand ? `<span class="bg-gray-800 border border-gray-700 px-2 py-0.5 rounded text-gray-300 font-medium">${item.demand}</span>` : '<span class="text-gray-600">-</span>'}</td>
+        </tr>
+      `).join('');
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
